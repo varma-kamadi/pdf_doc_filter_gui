@@ -159,11 +159,19 @@ def _page_score(prev: PageData, cur: PageData) -> tuple[int, List[str]]:
 
     cur_num = extract_page_number(cur.header_text + "\n" + cur.footer_text)
     prev_num = extract_page_number(prev.header_text + "\n" + prev.footer_text)
-    if cur_num is not None and prev_num is not None:
-        if cur_num == 1 and prev_num != 1:
-            score += 3
-            reasons.append(f"page-number series reset to 1 (was {prev_num})")
-        elif cur_num < prev_num:
+
+    # A definite, unambiguous "page 1" is strong evidence of a new document start on its
+    # own - whether or not the previous page had any extractable number at all (e.g. an
+    # OCR'd page with no number followed by a page clearly marked "1"). This takes
+    # priority over the weaker "format changed" case below, and isn't reduced for OCR
+    # pages: the number itself was confidently extracted, so it's trusted at full weight.
+    page_number_reset = cur_num == 1 and prev_num != 1
+    if page_number_reset:
+        prev_desc = str(prev_num) if prev_num is not None else "no page number detected"
+        score += 3
+        reasons.append(f"page-number series starts at 1 (previous: {prev_desc})")
+    elif cur_num is not None and prev_num is not None:
+        if cur_num < prev_num:
             score += 2
             reasons.append(f"page number decreased ({prev_num} -> {cur_num})")
         elif cur_num != prev_num + 1:
@@ -177,8 +185,11 @@ def _page_score(prev: PageData, cur: PageData) -> tuple[int, List[str]]:
     if heading and _is_distinctive_heading(cur, heading):
         heading_text = heading.text.strip()
         if heading_text and heading_text.lower() not in (prev.text or "").lower():
-            score += 2 // hf_divisor
-            suffix = " (OCR, reduced weight)" if both_scanned else ""
+            # A heading co-occurring with a confirmed page-1 reset is corroborated
+            # evidence, not standalone OCR noise - don't reduce it in that case.
+            heading_divisor = 1 if page_number_reset else hf_divisor
+            score += 2 // heading_divisor
+            suffix = "" if page_number_reset else (" (OCR, reduced weight)" if both_scanned else "")
             reasons.append(f"distinctive heading: '{heading_text[:60]}'{suffix}")
 
     prev_tail = (prev.text or "")[-_SIGNATURE_TAIL_CHARS:]

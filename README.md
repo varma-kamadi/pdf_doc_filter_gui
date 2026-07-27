@@ -98,13 +98,17 @@ listed for each boundary. If it over-splits or under-splits, adjust
 
 Each page is compared to the page before it and gets points:
 
+- a definite, unambiguous page number **1** appears (whether or not the previous page had
+  any extractable number at all): **+3** - takes priority over every other page-number
+  rule below, and is never reduced for OCR'd pages (see below)
 - header **and** footer fingerprint both changed: **+3**
 - header **or** footer fingerprint changed: **+2**
-- page-number series reset to 1: **+3**
 - page number decreased (not a reset to 1): **+2**
 - page number skipped non-sequentially: **+1**
 - page numbering format appeared or disappeared (e.g. "Page X of Y" stops or starts): **+2**
 - a distinctively large/bold heading appears that wasn't on the previous page: **+2**
+  (also not reduced for OCR'd pages when it co-occurs with a definite page-1 reset above -
+  a heading confirmed by a real page-number reset is corroborated evidence, not noise)
 - the previous page ends with a signature block (e.g. "Signature:", "Respectfully submitted,", "Sincerely,", "/s/"): **+2**
 
 Header/footer fingerprinting only considers short, label-like lines (≤6 words) in
