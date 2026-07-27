@@ -79,9 +79,19 @@ def _group_ocr_words_into_lines(ocr_data: dict) -> List[LineInfo]:
     return [l for l in lines if l.text]
 
 
+_MAX_RUNNING_LINE_WORDS = 6
+
+
 def _filter_running_lines(lines: List[LineInfo]) -> List[LineInfo]:
-    """Drop outsized lines (e.g. a title bleeding into the header/footer zone) so the
-    fingerprint reflects only the small, uniformly-sized running header/footer text."""
+    """Keep only lines that look like a genuine running header/footer label (org name,
+    'Page X of Y', a confidentiality notice, contact info) and drop everything else. A
+    real header/footer line is always short; a page with no real header/footer - common
+    on scanned/OCR'd pages, but it also happens on native pages when the last line of a
+    paragraph happens to land in the crop zone - instead catches a fragment of body-text
+    sentence there, which differs on every page and would otherwise look like constant
+    false evidence of a new document. This filters per line (not the whole block) so one
+    noisy sentence doesn't wipe out a genuine short label sitting right next to it."""
+    lines = [l for l in lines if len(l.text.split()) <= _MAX_RUNNING_LINE_WORDS]
     if len(lines) <= 1:
         return lines
     min_size = min(l.size for l in lines)

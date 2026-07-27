@@ -105,6 +105,24 @@ Each page is compared to the page before it and gets points:
 - page number skipped non-sequentially: **+1**
 - page numbering format appeared or disappeared (e.g. "Page X of Y" stops or starts): **+2**
 - a distinctively large/bold heading appears that wasn't on the previous page: **+2**
+- the previous page ends with a signature block (e.g. "Signature:", "Respectfully submitted,", "Sincerely,", "/s/"): **+2**
+
+Header/footer fingerprinting only considers short, label-like lines (≤6 words) in
+the top/bottom ~12% of the page - a real running header/footer is always a short
+label (org name, "Page X of Y", contact info), never a full sentence. This
+matters because on pages with no genuine running header/footer, that crop zone
+instead catches whatever body-paragraph line happens to land there, which
+differs on every page and would otherwise look like constant false evidence of
+a new document; filtering is done per line so one noisy sentence doesn't wipe
+out a genuine short label sitting next to it.
+
+When **both** pages in a comparison were OCR'd, the header/footer-changed and
+heading signals are worth half as much. OCR text position and recognition are
+much noisier than a native text layer - dense scanned forms/checklists often
+render every line in a similarly large font with no true "body text" baseline,
+which otherwise reads as a constant stream of "distinctive headings." Halving
+this weight means it takes real corroboration (a page-number change, a
+signature) to cross the threshold from OCR'd pages alone.
 
 A page becomes a new document's first page once its score reaches
 `--min-score` (default `6`). Page 1 of the input is always the start of the

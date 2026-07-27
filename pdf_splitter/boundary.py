@@ -18,6 +18,14 @@ _PAGE_OF_RE = re.compile(r"page\s+(\d+)\s+of\s+(\d+)", re.I)
 _SLASH_RE = re.compile(r"\b(\d{1,4})\s*/\s*(\d{1,4})\b")
 _STANDALONE_RE = re.compile(r"^-?\s*(\d{1,4})\s*-?$")
 
+_SIGNATURE_RE = re.compile(
+    r"(signature|signed\s+by|digitally\s+signed|electronically\s+signed|"
+    r"parent\s*/?\s*guardian\s+signature|authorized\s+signature|"
+    r"respectfully\s+submitted|sincerely|regards|/s/)",
+    re.I,
+)
+_SIGNATURE_TAIL_CHARS = 400  # only look near the end of the page for a signature block
+
 
 @dataclass
 class BoundaryDecision:
@@ -134,12 +142,20 @@ def _page_score(prev: PageData, cur: PageData) -> tuple[int, List[str]]:
     header_changed = bool(fp_cur_header or fp_prev_header) and fp_cur_header != fp_prev_header
     footer_changed = bool(fp_cur_footer or fp_prev_footer) and fp_cur_footer != fp_prev_footer
 
+    # OCR text position/recognition is much noisier than a native text layer - on a
+    # scanned page there's often no real running header/footer at all, so the crop zone
+    # just catches whatever body text happens to land there, which differs every page.
+    # When both pages were OCR'd, halve this signal's weight so it takes real
+    # corroboration (a page-number change, a signature) to cross the threshold alone.
+    both_scanned = prev.is_scanned and cur.is_scanned
+    hf_divisor = 2 if both_scanned else 1
+
     if header_changed and footer_changed:
-        score += 3
-        reasons.append("header and footer both changed")
+        score += 3 // hf_divisor
+        reasons.append("header and footer both changed" + (" (OCR, reduced weight)" if both_scanned else ""))
     elif header_changed or footer_changed:
-        score += 2
-        reasons.append("header or footer changed")
+        score += 2 // hf_divisor
+        reasons.append("header or footer changed" + (" (OCR, reduced weight)" if both_scanned else ""))
 
     cur_num = extract_page_number(cur.header_text + "\n" + cur.footer_text)
     prev_num = extract_page_number(prev.header_text + "\n" + prev.footer_text)
@@ -161,8 +177,14 @@ def _page_score(prev: PageData, cur: PageData) -> tuple[int, List[str]]:
     if heading and _is_distinctive_heading(cur, heading):
         heading_text = heading.text.strip()
         if heading_text and heading_text.lower() not in (prev.text or "").lower():
-            score += 2
-            reasons.append(f"distinctive heading: '{heading_text[:60]}'")
+            score += 2 // hf_divisor
+            suffix = " (OCR, reduced weight)" if both_scanned else ""
+            reasons.append(f"distinctive heading: '{heading_text[:60]}'{suffix}")
+
+    prev_tail = (prev.text or "")[-_SIGNATURE_TAIL_CHARS:]
+    if _SIGNATURE_RE.search(prev_tail):
+        score += 2
+        reasons.append("previous page ends with a signature block")
 
     return score, reasons
 
