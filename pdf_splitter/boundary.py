@@ -17,6 +17,7 @@ _WS_RE = re.compile(r"\s+")
 _PAGE_OF_RE = re.compile(r"page\s+(\d+)\s+of\s+(\d+)", re.I)
 _SLASH_RE = re.compile(r"\b(\d{1,4})\s*/\s*(\d{1,4})\b")
 _STANDALONE_RE = re.compile(r"^-?\s*(\d{1,4})\s*-?$")
+_DATE_RE = re.compile(r"\b\d{1,2}\s*/\s*\d{1,2}\s*/\s*\d{2,4}\b")
 
 _SIGNATURE_RE = re.compile(
     r"(signature|signed\s+by|digitally\s+signed|electronically\s+signed|"
@@ -63,6 +64,11 @@ def extract_page_number(text: str) -> Optional[int]:
         m = _PAGE_OF_RE.search(line)
         if m:
             return int(m.group(1))
+        if _DATE_RE.search(line):
+            # A calendar date like "04/06/2026" or "DOB: 10/16/2016" would otherwise be
+            # misread by _SLASH_RE as a page-fraction ("4/6", "10/16") - skip this line
+            # for the weaker slash/standalone checks below rather than risk a false hit.
+            continue
         m = _SLASH_RE.search(line)
         if m:
             return int(m.group(1))
