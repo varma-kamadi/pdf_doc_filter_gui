@@ -132,6 +132,22 @@ A page becomes a new document's first page once its score reaches
 `--min-score` (default `6`). Page 1 of the input is always the start of the
 first document.
 
+## Troubleshooting across machines / reporting a bug
+
+If `analyze` or `split` crashes, it automatically writes a
+`pdf_splitter_debug_<timestamp>.txt` file (next to `--outdir` if given,
+otherwise the current directory) containing the OS/Python/package/OCR-binary
+versions and the full traceback. Share that file - it has everything needed to
+reproduce an environment-specific issue without back-and-forth.
+
+To capture the same environment info even when nothing has gone wrong yet
+(e.g. before your first run on a new machine, or to compare Windows vs
+macOS/Linux setups):
+
+```bash
+python main.py envreport
+```
+
 ## Project layout
 
 ```
@@ -143,5 +159,6 @@ pdf_splitter_app/
     ├── extraction.py        # per-page text/layout extraction + OCR fallback
     ├── boundary.py           # scoring heuristics + boundary grouping
     ├── splitter.py           # writes split PDFs + manifest.json
-    └── cli.py                # argparse CLI (analyze / split)
+    ├── diagnostics.py         # environment/error debug report (envreport, crash logging)
+    └── cli.py                # argparse CLI (analyze / split / envreport)
 ```

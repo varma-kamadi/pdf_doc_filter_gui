@@ -7,6 +7,7 @@ import json
 import sys
 
 from .boundary import apply_manual_boundaries, detect_boundaries
+from .diagnostics import environment_report, write_debug_report
 from .extraction import extract_pages
 from .splitter import split_pdf
 
@@ -53,6 +54,9 @@ def _build_arg_parser() -> argparse.ArgumentParser:
     add_common(p_split)
     p_split.add_argument("--outdir", required=True, help="Directory to write split PDFs and manifest.json into")
 
+    sub.add_parser("envreport", help="Write a report of this machine's Python/package/OCR-binary versions "
+                                       "to a text file, e.g. to compare setups across Windows/macOS/Linux")
+
     return parser
 
 
@@ -66,26 +70,39 @@ def main(argv=None) -> int:
     parser = _build_arg_parser()
     args = parser.parse_args(argv)
 
+    if args.command == "envreport":
+        path = write_debug_report()
+        print(environment_report())
+        print(f"\nSaved to: {path}")
+        return 0
+
+    try:
+        return _run(args)
+    except Exception as e:
+        report_path = write_debug_report(e, outdir=getattr(args, "outdir", None))
+        print(f"\nError: {e}", file=sys.stderr)
+        print(f"A debug report (environment + full traceback) was saved to:\n  {report_path}", file=sys.stderr)
+        print("Share that file if you need help troubleshooting this.", file=sys.stderr)
+        return 1
+
+
+def _run(args) -> int:
     print(f"Reading {args.input_pdf} ...")
 
     def progress(done, total, was_scanned):
         tag = "OCR" if was_scanned else "text"
         print(f"  page {done}/{total} [{tag}]", end="\r")
 
-    try:
-        pages = extract_pages(
-            args.input_pdf,
-            header_frac=args.header_frac,
-            footer_frac=args.footer_frac,
-            ocr_lang=args.lang,
-            dpi=args.dpi,
-            min_text_chars=args.min_text_chars,
-            force_ocr=args.force_ocr,
-            progress_callback=progress,
-        )
-    except RuntimeError as e:
-        print(f"\nError: {e}", file=sys.stderr)
-        return 1
+    pages = extract_pages(
+        args.input_pdf,
+        header_frac=args.header_frac,
+        footer_frac=args.footer_frac,
+        ocr_lang=args.lang,
+        dpi=args.dpi,
+        min_text_chars=args.min_text_chars,
+        force_ocr=args.force_ocr,
+        progress_callback=progress,
+    )
     print()
 
     ocr_count = sum(1 for p in pages if p.is_scanned)
