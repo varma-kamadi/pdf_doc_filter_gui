@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# generated output and debug scratch files — never commit real documents or their splits
+out/
+*.pdf
+!sample*.pdf
+lines_debug.txt
+debug_out.txt
+*.json
+!requirements.json
