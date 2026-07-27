@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """Standalone entry point: python main.py {analyze|split} input.pdf [options]"""
 
 import sys

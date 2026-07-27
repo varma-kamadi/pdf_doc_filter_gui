@@ -29,11 +29,17 @@ pip install -r requirements.txt
 OCR also needs two external binaries on PATH (only required if your PDFs
 contain scanned pages):
 
-- **Tesseract OCR** — Windows installer: https://github.com/UB-Mannheim/tesseract/wiki
-- **Poppler** (for `pdf2image`) — Windows binaries: https://github.com/oschwartz10612/poppler-windows/releases
-  (add the extracted `Library/bin` folder to PATH)
+- **macOS** (Homebrew): `brew install poppler tesseract`
+- **Linux** (Debian/Ubuntu): `sudo apt install poppler-utils tesseract-ocr`
+- **Windows**:
+  - Tesseract OCR installer: https://github.com/UB-Mannheim/tesseract/wiki
+  - Poppler binaries: https://github.com/oschwartz10612/poppler-windows/releases
+    (add the extracted `Library/bin` folder to PATH)
 
 ## Usage
+
+On macOS/Linux, use `python3` instead of `python` if your system doesn't alias
+`python` to Python 3.
 
 Dry run first — see what it detects without writing any files:
 

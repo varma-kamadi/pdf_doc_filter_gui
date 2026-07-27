@@ -127,10 +127,13 @@ def _extract_scanned_page(pdf_path: str, page_number_1based: int, dpi: int, ocr_
     except Exception as e:
         raise RuntimeError(
             f"Page {page_number_1based} has no embedded text layer and needs OCR, but the "
-            "Poppler and/or Tesseract binaries could not be run. Install Poppler "
-            "(https://github.com/oschwartz10612/poppler-windows/releases) and Tesseract "
-            "(https://github.com/UB-Mannheim/tesseract/wiki) and ensure both are on PATH, "
-            f"then retry. Underlying error: {e}"
+            "Poppler and/or Tesseract binaries could not be run. Install them and ensure both "
+            "are on PATH, then retry:\n"
+            "  macOS (Homebrew):  brew install poppler tesseract\n"
+            "  Linux (Debian/Ubuntu):  sudo apt install poppler-utils tesseract-ocr\n"
+            "  Windows: Poppler (https://github.com/oschwartz10612/poppler-windows/releases) "
+            "and Tesseract (https://github.com/UB-Mannheim/tesseract/wiki)\n"
+            f"Underlying error: {e}"
         ) from e
     lines = _group_ocr_words_into_lines(data)
 
