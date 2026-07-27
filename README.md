@@ -36,7 +36,29 @@ contain scanned pages):
   - Poppler binaries: https://github.com/oschwartz10612/poppler-windows/releases
     (add the extracted `Library/bin` folder to PATH)
 
-## Usage
+The GUI (`gui.py`) uses Tkinter, which ships with Python on Windows and macOS.
+On Linux it's sometimes a separate package:
+
+```bash
+sudo apt install python3-tk       # Debian/Ubuntu
+sudo dnf install python3-tkinter  # Fedora
+```
+
+## GUI
+
+```bash
+python gui.py
+```
+
+Pick the merged PDF, pick (or type) an output directory, set the min score,
+and click **Split PDF**. This just runs `main.py split <pdf> --outdir <dir>
+--min-score <n>` as a subprocess and streams its output into the log pane —
+it's a thin wrapper around the same CLI covered below, not a separate
+implementation. There's no "Analyze" button in the GUI; run `python main.py
+analyze ...` from a terminal first if you want to check the detected
+boundaries before splitting for real.
+
+## Usage (CLI)
 
 On macOS/Linux, use `python3` instead of `python` if your system doesn't alias
 `python` to Python 3.
@@ -92,7 +114,8 @@ first document.
 
 ```
 pdf_splitter_app/
-├── main.py                 # entry point
+├── main.py                 # CLI entry point
+├── gui.py                   # Tkinter GUI (file picker, outdir picker, min-score, Split button)
 ├── requirements.txt
 └── pdf_splitter/
     ├── extraction.py        # per-page text/layout extraction + OCR fallback
